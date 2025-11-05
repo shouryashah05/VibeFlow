@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # VibeFlow — AI-Powered Visualization & Reasoning
 
 VibeFlow is a dark, futuristic workspace that helps engineers visualise, understand, and debate complex codebases. Upload a source folder to generate structural graphs, interactive charts, and conversational insights powered by DeepSeek (bring your own API key).
@@ -55,3 +56,7 @@ Without a key, the AI Reasoning tab gracefully falls back to local summaries.
 - Enhance AI Reasoning with richer summaries and tool selection.
 - Deliver Jury Mode with multi-agent scoring and feedback reports.
 - Persist uploaded project metadata locally for quick reloads.
+=======
+# VibeFlow
+A modern, dark-themed web platform that transforms how developers understand and interact with codebases through visual graphs, AI-powered reasoning, and intelligent code evaluation.
+>>>>>>> 055ca748b8bfaa602b00c809fbec4dff77114eda
