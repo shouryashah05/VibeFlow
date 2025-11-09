@@ -22,13 +22,6 @@ const featureCards: FeatureCardDescriptor[] = [
     tab: 'visualize',
   },
   {
-    title: 'AI Reasoning',
-    description: 'Chat with your codebase, get instant insight, and debug with contextual awareness.',
-    icon: '💬',
-    cta: 'Start a Session',
-    tab: 'reasoning',
-  },
-  {
     title: 'Chat with Juries',
     description: 'Soon: let specialized AIs review architecture, quality, and delivery confidence in seconds.',
     icon: '🧑‍⚖️',

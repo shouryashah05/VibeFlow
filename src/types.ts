@@ -1,6 +1,6 @@
 import type { ElementsDefinition } from 'cytoscape';
 
-export type ActiveWorkspaceTab = 'visualize' | 'reasoning' | 'jury';
+export type ActiveWorkspaceTab = 'visualize' | 'jury';
 
 export interface ProjectFile {
   name: string;
@@ -32,13 +32,4 @@ export interface ProcessedProject {
   summary: ProjectSummary;
   graphElements: ElementsDefinition;
   topFilesByLines: LineStat[];
-}
-
-export type ChatRole = 'user' | 'assistant' | 'system';
-
-export interface ChatMessage {
-  id: string;
-  role: ChatRole;
-  content: string;
-  createdAt: number;
 }
