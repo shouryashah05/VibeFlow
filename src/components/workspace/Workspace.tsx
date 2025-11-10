@@ -12,7 +12,7 @@ const tabDefinitions: Array<{
   subtitle?: string;
 }> = [
   { id: 'visualize', label: 'Visualize', icon: '📊', subtitle: 'Graph your codebase' },
-  { id: 'jury', label: 'Jury Mode', icon: '🧑‍⚖️', subtitle: 'Coming soon' },
+  { id: 'jury', label: 'Jury Mode', icon: '🧑‍⚖️', subtitle: 'Analyze your coding skills' },
 ];
 
 interface WorkspaceProps {

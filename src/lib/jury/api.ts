@@ -1,6 +1,17 @@
 // Jury Mode API client
 
+export interface CodeMetrics {
+  memory_management: number; // 0-10
+  algorithmic_complexity: number; // 0-10 (0=best, 10=worst)
+  runtime_efficiency: number; // 0-10
+  security: 'Low' | 'Medium' | 'High'; // Risk level
+  reliability: { handled: number; unhandled: number }; // Error handling
+  maintainability: 'Good' | 'Fair' | 'Poor';
+  scalability: number; // 0-10
+}
+
 export interface AnalyzeResponse {
+  metrics: CodeMetrics;
   summary: string;
   concepts: string[];
   questions: string[];
@@ -22,6 +33,8 @@ export interface GreyArea {
 
 export interface EvaluateResponse {
   overall_feedback: string;
+  overall_score: number;
+  coding_understanding: number;
   grey_areas: GreyArea[];
 }
 

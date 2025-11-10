@@ -5,6 +5,8 @@ import { analyzeProject, evaluateAnswers, type Answer, type AnalyzeResponse, typ
 import { LoadingStatus } from './LoadingStatus';
 import { QuestionsForm } from './QuestionsForm';
 import { ResultView } from './ResultView';
+import { DisclaimerModal } from './DisclaimerModal';
+import { CodeAnalysis } from './CodeAnalysis';
 
 interface JuryPlaceholderProps {
   project: ProcessedProject | null;
@@ -14,6 +16,7 @@ type JuryState = 'idle' | 'analyzing' | 'questions' | 'evaluating' | 'result';
 
 export const JuryPlaceholder = ({ project }: JuryPlaceholderProps) => {
   const [state, setState] = useState<JuryState>('idle');
+  const [showDisclaimer, setShowDisclaimer] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalyzeResponse | null>(null);
   const [evaluationResult, setEvaluationResult] = useState<EvaluateResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -21,7 +24,15 @@ export const JuryPlaceholder = ({ project }: JuryPlaceholderProps) => {
 
   const digest = useProjectDigest(project);
 
-  const handleBeginJuryMode = async () => {
+  const handleBeginClick = () => {
+    // Show disclaimer modal first
+    setShowDisclaimer(true);
+  };
+
+  const handleDisclaimerAccept = async () => {
+    // User accepted disclaimer, close modal and start analysis
+    setShowDisclaimer(false);
+    
     if (!digest || cooldown) return;
 
     setError(null);
@@ -32,13 +43,19 @@ export const JuryPlaceholder = ({ project }: JuryPlaceholderProps) => {
       const result = await analyzeProject(digest.digest);
       setAnalysisResult(result);
       setState('questions');
-    } catch {
-      setError('Couldn\'t analyze project. Try again.');
+    } catch (err) {
+      console.error('Analysis error:', err);
+      setError(`Couldn't analyze project. Try again. (${err instanceof Error ? err.message : 'Unknown error'})`);
       setState('idle');
     } finally {
       // Cooldown to respect 10 RPM limit
       setTimeout(() => setCooldown(false), 7000);
     }
+  };
+
+  const handleDisclaimerCancel = () => {
+    // User cancelled, just close modal
+    setShowDisclaimer(false);
   };
 
   const handleSubmitAnswers = async (answers: Answer[]) => {
@@ -82,11 +99,14 @@ export const JuryPlaceholder = ({ project }: JuryPlaceholderProps) => {
         {state === 'idle' && (
           <div className="text-center">
             <button
-              onClick={handleBeginJuryMode}
+              onClick={handleBeginClick}
               disabled={cooldown}
-              className="rounded-full bg-electric px-8 py-3 font-medium text-white shadow-glow transition hover:bg-cobalt hover:shadow-[0_0_35px_rgba(127,90,240,0.55)] disabled:cursor-not-allowed disabled:opacity-50"
+              className="group relative overflow-hidden rounded-full bg-black px-10 py-4 font-semibold text-white transition-all duration-300 hover:bg-electric hover:shadow-[0_0_40px_rgba(127,90,240,0.6)] disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {cooldown ? 'Wait a moment...' : 'Begin Jury Mode'}
+              <span className="relative z-10 transition-colors duration-300 group-hover:text-white">
+                {cooldown ? 'Wait a moment...' : 'Begin Jury Mode'}
+              </span>
+              <div className="absolute inset-0 -z-0 bg-gradient-to-r from-electric to-cobalt opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
             </button>
           </div>
         )}
@@ -102,12 +122,18 @@ export const JuryPlaceholder = ({ project }: JuryPlaceholderProps) => {
   // Questions state
   if (state === 'questions' && analysisResult) {
     return (
-      <QuestionsForm
-        summary={analysisResult.summary}
-        questions={analysisResult.questions}
-        onSubmit={handleSubmitAnswers}
-        disabled={cooldown}
-      />
+      <div className="mx-auto max-w-4xl">
+        {/* Code Analysis Metrics */}
+        <CodeAnalysis metrics={analysisResult.metrics} />
+        
+        {/* Questions Form */}
+        <QuestionsForm
+          summary={analysisResult.summary}
+          questions={analysisResult.questions}
+          onSubmit={handleSubmitAnswers}
+          disabled={cooldown}
+        />
+      </div>
     );
   }
 
@@ -123,17 +149,30 @@ export const JuryPlaceholder = ({ project }: JuryPlaceholderProps) => {
 
   // Idle state - show begin button
   return (
-    <div className="flex min-h-[60vh] items-center justify-center">
-      <div className="text-center">
-        <button
-          onClick={handleBeginJuryMode}
-          disabled={cooldown}
-          className="rounded-full bg-electric px-8 py-3 font-medium text-white shadow-glow transition hover:bg-cobalt hover:shadow-[0_0_35px_rgba(127,90,240,0.55)] disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {cooldown ? 'Wait a moment...' : 'Begin Jury Mode'}
-        </button>
+    <>
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="text-center">
+          <button
+            onClick={handleBeginClick}
+            disabled={cooldown}
+            className="group relative overflow-hidden rounded-full bg-black px-10 py-4 font-semibold text-white transition-all duration-300 hover:bg-electric hover:shadow-[0_0_40px_rgba(127,90,240,0.6)] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <span className="relative z-10 transition-colors duration-300 group-hover:text-white">
+              {cooldown ? 'Wait a moment...' : 'Begin Jury Mode'}
+            </span>
+            <div className="absolute inset-0 -z-0 bg-gradient-to-r from-electric to-cobalt opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
+          </button>
+        </div>
       </div>
-    </div>
+
+      {/* Disclaimer Modal */}
+      {showDisclaimer && (
+        <DisclaimerModal
+          onAccept={handleDisclaimerAccept}
+          onCancel={handleDisclaimerCancel}
+        />
+      )}
+    </>
   );
 };
 

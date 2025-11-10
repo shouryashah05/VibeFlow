@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Backend Test</title>
+</head>
+<body>
+    <h1>Backend API Test</h1>
+    <button onclick="testHealth()">Test Health Endpoint</button>
+    <button onclick="testAnalyze()">Test Analyze Endpoint</button>
+    <pre id="output"></pre>
+
+    <script>
+        const output = document.getElementById('output');
+
+        async function testHealth() {
+            try {
+                output.textContent = 'Testing /health...';
+                const response = await fetch('http://localhost:3001/health');
+                const data = await response.json();
+                output.textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                output.textContent = 'Error: ' + error.message;
+            }
+        }
+
+        async function testAnalyze() {
+            try {
+                output.textContent = 'Testing /jury/analyze...';
+                const response = await fetch('http://localhost:3001/jury/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        project_digest: 'Test project with 5 files, loops:10, async:5'
+                    })
+                });
+                const data = await response.json();
+                output.textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                output.textContent = 'Error: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>
