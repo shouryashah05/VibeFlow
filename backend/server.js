@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import rateLimit from 'express-rate-limit';
 
 dotenv.config();
 
@@ -13,53 +14,45 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-lite' });
 
 // Middleware
+// Middleware
 app.use(cors());
 app.use(express.json());
 
-// Rate limiting tracking (simple in-memory)
-const rateLimits = new Map();
+// Rate limiting: 10 requests per minute per IP
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute window
+  max: 10, // 10 requests per window
+  message: {
+    error: 'Too many requests from this IP. Please wait a minute and try again.',
+    retryAfter: 60
+  },
+  standardHeaders: true, // Return rate limit info in `RateLimit-*` headers
+  legacyHeaders: false, // Disable `X-RateLimit-*` headers
+  handler: (req, res) => {
+    res.status(429).json({
+      error: 'Rate limit exceeded. Maximum 10 requests per minute.',
+      retryAfter: 60
+    });
+  }
+});
 
-const checkRateLimit = (ip) => {
-  const now = Date.now();
-  const userLimits = rateLimits.get(ip) || { requests: [], dailyCount: 0, dailyReset: now + 86400000 };
-  
-  // Reset daily count if needed
-  if (now > userLimits.dailyReset) {
-    userLimits.dailyCount = 0;
-    userLimits.dailyReset = now + 86400000;
+// Daily limit: 500 requests per day per IP
+const dailyLimiter = rateLimit({
+  windowMs: 24 * 60 * 60 * 1000, // 24 hours
+  max: 500, // 500 requests per day
+  skipSuccessfulRequests: false,
+  message: {
+    error: 'Daily request limit exceeded (500 requests/day). Try again tomorrow.',
   }
-  
-  // Check daily limit (500 RPD)
-  if (userLimits.dailyCount >= 500) {
-    return { allowed: false, reason: 'Daily limit reached (500 requests)' };
-  }
-  
-  // Filter requests from last minute
-  userLimits.requests = userLimits.requests.filter(t => t > now - 60000);
-  
-  // Check per-minute limit (10 RPM)
-  if (userLimits.requests.length >= 10) {
-    return { allowed: false, reason: 'Rate limit exceeded (10 requests per minute)' };
-  }
-  
-  // Update tracking
-  userLimits.requests.push(now);
-  userLimits.dailyCount++;
-  rateLimits.set(ip, userLimits);
-  
-  return { allowed: true };
-};
+});
+
+// Apply rate limiters to Jury Mode endpoints
+app.use('/jury', apiLimiter);
+app.use('/jury', dailyLimiter);
 
 // POST /jury/analyze
 app.post('/jury/analyze', async (req, res) => {
-  try {
-    const ip = req.ip;
-    const rateCheck = checkRateLimit(ip);
-    
-    if (!rateCheck.allowed) {
-      return res.status(429).json({ error: rateCheck.reason });
-    }
-    
+  try { 
     const { project_digest } = req.body;
     
     if (!project_digest) {
@@ -132,14 +125,7 @@ Return ONLY valid JSON matching this structure:
 // POST /jury/evaluate
 app.post('/jury/evaluate', async (req, res) => {
   try {
-    const ip = req.ip;
-    const rateCheck = checkRateLimit(ip);
-    
-    if (!rateCheck.allowed) {
-      return res.status(429).json({ error: rateCheck.reason });
-    }
-    
-    const { project_summary, answers } = req.body;
+     const { project_summary, answers } = req.body;
     
     if (!project_summary || !answers) {
       return res.status(400).json({ error: 'project_summary and answers are required' });
